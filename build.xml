@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Burp-NessusLoader" default="build jar">
+  <property environment="env"/>
+  <target name="build jar" depends="compile java">
+    <zip destfile="Burp-NessusLoader.jar">
+      <fileset dir="build">
+        <include name="burp/BurpExtender*.class"/>
+      </fileset>
+    </zip>
+  </target>
+  <target name="compile java">
+    <mkdir dir="build"/>
+    <javac srcdir="src" destdir="build" includeantruntime="false"/>
+  </target>
+  <target name="clean">
+    <delete dir="build"/>
+    <delete file="Burp-NessusLoader.jar"/>
+  </target>
+</project>

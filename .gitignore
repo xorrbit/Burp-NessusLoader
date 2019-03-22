@@ -1,0 +1,5 @@
+.DS_Store
+build/*
+*.class
+src/burp/I*
+*.nessus
