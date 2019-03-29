@@ -48,7 +48,7 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener
 				browseButton.setActionCommand("browse");
 				browseButton.addActionListener(BurpExtender.this);
 				fileNameTextField = new JTextField(50);
-				JButton runButton = new JButton("Parse web targets from .nessus file");
+				JButton runButton = new JButton("Parse file and add targets to site map");
 				runButton.setActionCommand("run");
 				runButton.addActionListener(BurpExtender.this);
 
@@ -80,25 +80,55 @@ public class BurpExtender implements IBurpExtender, ITab, ActionListener
 				File inputFile = new File(fileNameTextField.getText());
 				if (!inputFile.exists())
 				{
-					JOptionPane.showMessageDialog(null, "File not found: " + fileNameTextField.getText(), "Nope", JOptionPane.ERROR_MESSAGE);
 				    throw new Exception("File not found: " + fileNameTextField.getText());
 				}
+
 				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-				Document doc = dBuilder.parse(inputFile);
-				doc.getDocumentElement().normalize();
+				Document doc;
+
+				try {
+					doc = dBuilder.parse(inputFile);
+					doc.getDocumentElement().normalize();
+				} catch (Exception pe) {
+					throw new Exception("Error parsing file: " + pe.getMessage());
+				}
 
 				urls = getWebURLs(doc);
 
-				urls.forEach((url) -> {
-					callbacks.printOutput("Adding " + url + " to scope");
-					callbacks.includeInScope((URL)url);
-				});
+				// put this in a new thread since it does http(s) requests and we don't want to block the UI
+				Thread thread = new Thread(new Runnable() { public void run() {
+					addURLsToSiteMap(urls);
+				}});
+				// don't prevent the JVM from exiting when the program finishes but the thread is still running
+				thread.setDaemon(true);
+				// kick it off
+				thread.start();
 				
-				JOptionPane.showMessageDialog(null, "Added " + urls.size() + " targets to scope.", "Yep", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, "Found " + urls.size() + " targets in .nessus file, adding to site map (under Target tab)...", "Adding...", JOptionPane.INFORMATION_MESSAGE);
+
 			} catch (Exception e) {
+				JOptionPane.showMessageDialog(null, e.getMessage(), "Nope", JOptionPane.ERROR_MESSAGE);
 				callbacks.printError(e.getMessage());
 			}
+		}
+	}
+
+	private void addURLsToSiteMap(ArrayList<URL> urls)
+	{
+		try {
+			urls.forEach((url) -> {
+				callbacks.printOutput("Adding " + url + " to site map...");
+				IHttpService httpService = callbacks.getHelpers().buildHttpService(url.getHost(), url.getPort(), url.getProtocol());
+				byte[] request = callbacks.getHelpers().buildHttpRequest(url);
+				IHttpRequestResponse requestResponse = callbacks.makeHttpRequest(httpService, request);
+				callbacks.addToSiteMap(requestResponse);
+			});
+
+			callbacks.printOutput("Done! Added " + urls.size() + " targets to site map.");
+
+		} catch (Exception e) {
+			callbacks.printError(e.getMessage());
 		}
 	}
 

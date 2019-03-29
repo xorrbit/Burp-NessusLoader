@@ -3,7 +3,7 @@ Burp Suite extension to import detected web servers from a Nessus scan xml file 
 
 Intended Workflow
 -----------------
-This extension will parse a .nessus file and extract any ports that were identified as web servers, including those encapsulated with TLS. Right now the Burp Suite API does not allow an extension to spider/crawl multiple targets in one task, so instead of spidering/crawling these targets and creating a ton of tasks, it just adds each of them to the current target scope. You can then start a new crawl scan from the Burp dashboard and all the added targets will be selected and crawled in a single task.
+This extension will parse a .nessus file and extract any ports that were identified as web servers, including those encapsulated with TLS. Right now the Burp Suite API does not allow an extension to spider/crawl multiple targets in one task, so instead of spidering/crawling these targets and creating a ton of tasks, it just adds each of them to the current target site map. You can then start scans as required.
 
 Building the extension
 ---------------------
